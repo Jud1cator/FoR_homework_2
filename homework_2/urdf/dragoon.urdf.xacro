@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<robot name="dragoon" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:property name="base_rad" value="0.5" />
+  <xacro:property name="base_len" value="0.2" />
+  <xacro:property name="head_rad" value="0.25" />
+  <xacro:property name="head_len" value="0.5" />
+  <xacro:property name="legx" value="0.5" />
+  <xacro:property name="legy" value="0.1" />
+  <xacro:property name="legz" value="0.05" />
+  <xacro:property name="joint_rad" value="0.025" />
+  <xacro:property name="pi" value="3.1415" />
+  <xacro:property name="sqrt2" value="1.4142"/>
+
+  <material name="blue">
+    <color rgba="0 0 0.8 1"/>
+  </material>
+
+  <material name="yellow">
+    <color rgba="0.75 0.8 0 1"/>
+  </material>
+
+  <material name="red">
+    <color rgba="0.8 0 0 1"/>
+  </material>
+
+  <xacro:macro name="default_inertial" params="mass">
+    <inertial>
+      <mass value="${mass}" />
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
+    </inertial>
+  </xacro:macro>
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <cylinder radius="${base_rad}" length="${base_len}"/>
+      </geometry>
+      <material name="yellow"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${base_rad}" length="${base_len}"/>
+      </geometry>
+    </collision>
+    <xacro:default_inertial mass="10"/>
+  </link>
+
+  <xacro:macro name="leg" params="pref r f">
+    <xacro:property name="leg_x_offset" value="${(r+(1-r)*(-1))*base_rad/sqrt2}"/>
+    <xacro:property name="leg_y_offset" value="${(f+(1-f)*(-1))*base_rad/sqrt2}"/>
+    <xacro:property name="leg_orient" value="${((r-f)/2+5/4-f*r)*pi}"/>
+
+    <xacro:macro name="leg_joint" params="id xyz rpy p_link c_link">
+      <joint name="joint_${id}" type="revolute">
+        <origin rpy="${rpy}" xyz="${xyz}"/>
+        <axis xyz="0 ${r+(1-r)*(-1)} 0"/>
+        <limit effort="1000.0" lower="${-pi/3}" upper="${pi/3}" velocity="0.5"/>
+        <parent link="${p_link}"/>
+        <child link="${c_link}"/>
+      </joint>
+    </xacro:macro>
+
+    <xacro:macro name="leg_part" params="id xyz rpy">
+      <link name="part_${id}">
+        <visual>
+          <geometry>
+            <box size="${legx} ${legy} ${legz}"/>
+          </geometry>
+          <origin xyz="${xyz}" rpy="${rpy}"/>
+          <material name="yellow"/>
+        </visual>
+        <collision>
+          <geometry>
+            <box size="${legx} ${legy} ${legz}"/>
+          </geometry>
+        </collision>
+        <xacro:default_inertial mass="10"/>
+      </link>
+    </xacro:macro>
+
+    <xacro:leg_joint id="1_${pref}" xyz="${leg_x_offset} ${leg_y_offset} 0" rpy="0 0 ${leg_orient}" p_link="base_link" c_link="part_1_${pref}"/>
+    <xacro:leg_part id="1_${pref}" xyz="${legx/2} 0 0" rpy="0 0 0"/>
+    <xacro:leg_joint id="2_${pref}" xyz="${legx} 0 0" rpy="0 ${pi/2} 0" p_link="part_1_${pref}" c_link="part_2_${pref}"/>
+    <xacro:leg_part id="2_${pref}" xyz="${legx/2} 0 0" rpy="0 0 0"/>
+  </xacro:macro>
+
+  <xacro:leg pref="front_right" f="1" r="1"/>
+  <xacro:leg pref="front_left" f="1" r="0"/>
+  <xacro:leg pref="back_left" f="0" r="0"/>
+  <xacro:leg pref="back_right" f="0" r="1"/>
+
+  <joint name="base_to_head" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000.0" lower="${-2*pi}" upper="${2*pi}" velocity="0.8"/>
+    <parent link="base_link"/>
+    <child link="head"/>
+  </joint>
+
+  <link name="head">
+    <visual>
+      <geometry>
+        <cylinder radius="${head_rad}" length="${head_len}"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${head_rad}" length="${head_len}"/>
+      </geometry>
+    </collision>
+    <xacro:default_inertial mass="10"/>
+  </link>
+</robot>
